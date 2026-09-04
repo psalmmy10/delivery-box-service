@@ -11,12 +11,17 @@ remote locations) as described in the assessment brief.
 - JUnit 5 + Mockito + AssertJ (via `spring-boot-starter-test`)
 - Maven
 
-## Build / Run / Test
+## Clone/ Build / Run / Test
 
 > Requires Java 21 and Maven 3.6+ (or use the included Maven if you have it; no `mvnw` wrapper
 > jar is bundled here to keep the zip small — if you'd like one, run `mvn -N wrapper:wrapper`).
 
 ```bash
+
+# Clone
+git clone https://github.com/psalmmy10/delivery-box-service.git
+cd delivery-box-service
+
 # Build (compiles, runs tests, packages the jar)
 mvn clean install
 
