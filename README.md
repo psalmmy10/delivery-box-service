@@ -5,7 +5,7 @@ remote locations) as described in the assessment brief.
 
 ## Tech stack
 
-- Java 17
+- Java 21
 - Spring Boot 3.3.4 (Web, Data JPA, Validation)
 - H2 in-memory database
 - JUnit 5 + Mockito + AssertJ (via `spring-boot-starter-test`)
