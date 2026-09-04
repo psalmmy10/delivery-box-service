@@ -4,12 +4,15 @@ import com.example.deliverybox.constant.BoxState;
 import com.example.deliverybox.dao.model.Box;
 import com.example.deliverybox.dao.repository.BoxRepository;
 import com.example.deliverybox.dao.repository.ItemRepository;
-import com.example.deliverybox.dto.*;
 import com.example.deliverybox.dto.req.CreateBoxRequest;
 import com.example.deliverybox.dto.req.ItemRequest;
 import com.example.deliverybox.dto.req.LoadItemsRequest;
 import com.example.deliverybox.dto.res.BoxResponse;
-import com.example.deliverybox.exception.*;
+import com.example.deliverybox.exception.BoxNotFoundException;
+import com.example.deliverybox.exception.DuplicateBoxException;
+import com.example.deliverybox.exception.InvalidBoxStateException;
+import com.example.deliverybox.exception.LowBatteryException;
+import com.example.deliverybox.exception.WeightLimitExceededException;
 import com.example.deliverybox.service.impl.BoxServiceImpl;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -50,14 +53,22 @@ class BoxServiceTest {
         request.setWeightLimit(500);
         request.setBatteryCapacity(100);
 
-        when(boxRepository.existsById("BOX-100")).thenReturn(false);
-        when(boxRepository.save(any(Box.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(boxRepository.existsById("BOX-100"))
+                .thenReturn(false);
+
+        when(boxRepository.save(any(Box.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         BoxResponse response = boxService.createBox(request);
 
-        assertThat(response.getTxref()).isEqualTo("BOX-100");
-        assertThat(response.getState()).isEqualTo("IDLE");
-        assertThat(response.getBatteryCapacity()).isEqualTo(100);
+        assertThat(response.getTxref())
+                .isEqualTo("BOX-100");
+
+        assertThat(response.getState())
+                .isEqualTo("IDLE");
+
+        assertThat(response.getBatteryCapacity())
+                .isEqualTo(100);
     }
 
     @Test
@@ -66,7 +77,8 @@ class BoxServiceTest {
         request.setTxref("BOX-100");
         request.setWeightLimit(500);
 
-        when(boxRepository.existsById("BOX-100")).thenReturn(true);
+        when(boxRepository.existsById("BOX-100"))
+                .thenReturn(true);
 
         assertThatThrownBy(() -> boxService.createBox(request))
                 .isInstanceOf(DuplicateBoxException.class);
@@ -74,8 +86,15 @@ class BoxServiceTest {
 
     @Test
     void loadBox_throws_whenWeightExceedsLimit() {
-        Box box = new Box("BOX-100", 500, 100, BoxState.IDLE);
-        when(boxRepository.findById("BOX-100")).thenReturn(Optional.of(box));
+        Box box = new Box(
+                "BOX-100",
+                500,
+                100,
+                BoxState.IDLE
+        );
+
+        when(boxRepository.findById("BOX-100"))
+                .thenReturn(Optional.of(box));
 
         ItemRequest heavyItem = new ItemRequest();
         heavyItem.setName("Big-Item");
@@ -85,14 +104,23 @@ class BoxServiceTest {
         LoadItemsRequest request = new LoadItemsRequest();
         request.setItems(List.of(heavyItem));
 
-        assertThatThrownBy(() -> boxService.loadBox("BOX-100", request))
+        assertThatThrownBy(() ->
+                boxService.loadBox("BOX-100", request)
+        )
                 .isInstanceOf(WeightLimitExceededException.class);
     }
 
     @Test
     void loadBox_throws_whenBatteryBelowThreshold() {
-        Box box = new Box("BOX-100", 500, 10, BoxState.IDLE);
-        when(boxRepository.findById("BOX-100")).thenReturn(Optional.of(box));
+        Box box = new Box(
+                "BOX-100",
+                500,
+                10,
+                BoxState.IDLE
+        );
+
+        when(boxRepository.findById("BOX-100"))
+                .thenReturn(Optional.of(box));
 
         ItemRequest item = new ItemRequest();
         item.setName("Small-Item");
@@ -102,15 +130,26 @@ class BoxServiceTest {
         LoadItemsRequest request = new LoadItemsRequest();
         request.setItems(List.of(item));
 
-        assertThatThrownBy(() -> boxService.loadBox("BOX-100", request))
+        assertThatThrownBy(() ->
+                boxService.loadBox("BOX-100", request)
+        )
                 .isInstanceOf(LowBatteryException.class);
     }
 
     @Test
     void loadBox_succeeds_andTransitionsToLoaded_whenWithinLimits() {
-        Box box = new Box("BOX-100", 500, 100, BoxState.IDLE);
-        when(boxRepository.findById("BOX-100")).thenReturn(Optional.of(box));
-        when(boxRepository.save(any(Box.class))).thenAnswer(inv -> inv.getArgument(0));
+        Box box = new Box(
+                "BOX-100",
+                500,
+                100,
+                BoxState.IDLE
+        );
+
+        when(boxRepository.findById("BOX-100"))
+                .thenReturn(Optional.of(box));
+
+        when(boxRepository.save(any(Box.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         ItemRequest item = new ItemRequest();
         item.setName("Small-Item");
@@ -120,52 +159,85 @@ class BoxServiceTest {
         LoadItemsRequest request = new LoadItemsRequest();
         request.setItems(List.of(item));
 
-        BoxResponse response = boxService.loadBox("BOX-100", request);
+        BoxResponse response = boxService.loadBox(
+                "BOX-100",
+                request
+        );
 
-        assertThat(response.getState()).isEqualTo("LOADED");
-        assertThat(response.getCurrentLoadWeight()).isEqualTo(100);
+        assertThat(response.getState())
+                .isEqualTo("LOADED");
+
+        assertThat(response.getCurrentLoadWeight())
+                .isEqualTo(100);
     }
 
     @Test
     void loadBox_throws_whenBoxNotFound() {
-        when(boxRepository.findById(anyString())).thenReturn(Optional.empty());
+        when(boxRepository.findById(anyString()))
+                .thenReturn(Optional.empty());
 
         LoadItemsRequest request = new LoadItemsRequest();
+
         ItemRequest item = new ItemRequest();
         item.setName("X");
         item.setWeight(10);
         item.setCode("X1");
+
         request.setItems(List.of(item));
 
-        assertThatThrownBy(() -> boxService.loadBox("MISSING", request))
+        assertThatThrownBy(() ->
+                boxService.loadBox("MISSING", request)
+        )
                 .isInstanceOf(BoxNotFoundException.class);
     }
 
     @Test
     void loadBox_throws_whenBoxNotInLoadableState() {
-        Box box = new Box("BOX-100", 500, 100, BoxState.DELIVERING);
-        when(boxRepository.findById("BOX-100")).thenReturn(Optional.of(box));
+        Box box = new Box(
+                "BOX-100",
+                500,
+                100,
+                BoxState.DELIVERING
+        );
+
+        when(boxRepository.findById("BOX-100"))
+                .thenReturn(Optional.of(box));
 
         ItemRequest item = new ItemRequest();
         item.setName("X");
         item.setWeight(10);
         item.setCode("X1");
+
         LoadItemsRequest request = new LoadItemsRequest();
         request.setItems(List.of(item));
 
-        assertThatThrownBy(() -> boxService.loadBox("BOX-100", request))
+        assertThatThrownBy(() ->
+                boxService.loadBox("BOX-100", request)
+        )
                 .isInstanceOf(InvalidBoxStateException.class);
     }
 
     @Test
     void getAvailableBoxes_returnsOnlyIdleBoxesAboveBatteryThreshold() {
-        Box available = new Box("BOX-100", 500, 100, BoxState.IDLE);
-        when(boxRepository.findByStateAndBatteryCapacityGreaterThanEqual(BoxState.IDLE, 25))
-                .thenReturn(List.of(available));
+        Box available = new Box(
+                "BOX-100",
+                500,
+                100,
+                BoxState.IDLE
+        );
 
-        List<BoxResponse> result = boxService.getAvailableBoxes();
+        when(boxRepository.findByStateAndBatteryCapacityGreaterThanEqual(
+                BoxState.IDLE,
+                25
+        )).thenReturn(List.of(available));
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getTxref()).isEqualTo("BOX-100");
+        List<BoxResponse> result =
+                boxService.getAvailableBoxes();
+
+        assertThat(result)
+                .hasSize(1);
+
+        assertThat(result.get(0).getTxref())
+                .isEqualTo("BOX-100");
     }
 }
