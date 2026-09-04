@@ -67,7 +67,7 @@ Base path: `/api/boxes`
 ```bash
 curl -X POST http://localhost:8080/api/boxes \
   -H "Content-Type: application/json" \
-  -d '{"txref": "BOX-100", "weightLimit": 500, "batteryCapacity": 100}'
+  -d '{"txref": "BOX-001", "weightLimit": 500, "batteryCapacity": 100}'
 ```
 
 `batteryCapacity` is optional and defaults to `100` (a freshly deployed box).
@@ -115,7 +115,7 @@ Since the brief explicitly invites assumptions, here's what I decided and why:
 1. **`txref` is the box's business key and primary identifier.** It's used directly as the path
    variable (`/api/boxes/{txref}`) instead of a separate surrogate ID, since the brief describes
    it as the box's reference.
-2. **Weights are in grams**, matching the brief's "500gr max" and item "weight" fields — both
+2. **Weights are in grams**, matching the brief's "500gr max" and item "weight" fields both
    modeled as integers.
 3. **`batteryCapacity` is an integer percentage (0–100).**
 4. **A new box defaults to `state = IDLE` and `batteryCapacity = 100`** if battery isn't supplied
@@ -126,18 +126,18 @@ Since the brief explicitly invites assumptions, here's what I decided and why:
    *entire* request is rejected — no partial loads.
 6. **Loading is allowed incrementally**: a box already in `LOADING` (mid-load) can be loaded
    again; a box in `LOADED`, `DELIVERING`, `DELIVERED`, or `RETURNING` cannot be loaded until it
-   returns to `IDLE` (that reset transition — e.g. after delivery completes — is outside this
+   returns to `IDLE` (that reset transition e.g. after delivery completes is outside this
    task's scope, so no endpoint mutates a box back to `IDLE`).
 7. **"Available boxes for loading"** = boxes currently `IDLE` **and** with battery ≥ 25%, since
    that's the functional requirement gating the `LOADING` state.
 8. **Validation** for `Item.name` (`^[a-zA-Z0-9_-]+$`) and `Item.code` (`^[A-Z0-9_]+$`) is enforced
    via Bean Validation `@Pattern` annotations at the API boundary, returning `400` with a field-
    level message on failure.
-9. **No authentication/authorization** — out of scope for this exercise.
+9. **No authentication/authorization** out of scope for this exercise.
 10. **H2 in-memory database** is used for simplicity and to keep the project trivially runnable;
     swapping in Postgres/MySQL would just mean changing `spring.datasource.*` and adding the
-    relevant driver dependency — the JPA entities are otherwise portable.
-11. **Communication with the physical box hardware is out of scope**, as stated in the brief — this
+    relevant driver dependency the JPA entities are otherwise portable.
+11. **Communication with the physical box hardware is out of scope**, as stated in the brief this
     service only manages box/item *state*, not device communication.
 
 ## Project structure
