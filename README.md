@@ -48,11 +48,7 @@ if you want to inspect the data directly.
 | BOX-003 | 500         | 10               | IDLE (low battery — will reject loading) |
 | BOX-004 | 250         | 60               | DELIVERING (not available for loading) |
 
-> **Note on this build:** this project was assembled in a sandboxed environment without access to
-> Maven Central, so I was not able to run `mvn clean install` myself to give it a final green
-> build. I've compiled it "by eye" carefully (structure, imports, JPA mappings, and a brace/paren
-> balance check all pass), but please run `mvn clean install` as your first step and let me know
-> if anything doesn't compile — happy to fix immediately.
+
 
 ## API
 
